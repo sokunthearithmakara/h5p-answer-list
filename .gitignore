@@ -1,0 +1,4 @@
+node_modules/
+*.h5p
+.DS_Store
+Thumbs.db

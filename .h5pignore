@@ -1,0 +1,6 @@
+# Files that are not part of the H5P library and must not be packed into .h5p files
+tools/
+README.md
+LICENSE
+.gitignore
+.h5pignore

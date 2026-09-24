@@ -1,0 +1,226 @@
+.h5p-answer-list .h5p-answer-list-content {
+  font-size: 1em;
+  line-height: 1.5;
+}
+
+.h5p-answer-list .h5p-answer-list-text {
+  background: var(--h5p-theme-alternative-base, #f5f7fa);
+  border-radius: var(--h5p-theme-border-radius-medium, 0.25em);
+  padding: 0.75em 1em;
+  margin-bottom: 1em;
+}
+
+.h5p-answer-list .h5p-answer-list-input-row {
+  display: flex;
+  gap: 0.5em;
+  align-items: stretch;
+}
+
+.h5p-answer-list .h5p-answer-list-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 1em;
+  font-family: inherit;
+  padding: 0.5em 0.75em;
+  border: 1px solid var(--h5p-theme-stroke-1, #9aa4b1);
+  border-radius: var(--h5p-theme-border-radius-small, 0.25em);
+  background: #fff;
+  color: var(--h5p-theme-text-primary, #1f2933);
+}
+
+.h5p-answer-list .h5p-answer-list-input:focus {
+  outline: none;
+  border-color: var(--h5p-theme-main-cta-base, #1a73d9);
+  box-shadow: 0 0 0 2px rgba(26, 115, 217, 0.3);
+}
+
+.h5p-answer-list .h5p-answer-list-input:disabled {
+  background: #eef0f3;
+  cursor: not-allowed;
+}
+
+.h5p-answer-list .h5p-answer-list-add {
+  font-size: 1em;
+  min-width: 2.6em;
+  padding: 0 0.75em;
+  border: 1px solid var(--h5p-theme-main-cta-base, #1a73d9);
+  border-radius: var(--h5p-theme-border-radius-small, 0.25em);
+  background: var(--h5p-theme-main-cta-base, #1a73d9);
+  color: var(--h5p-theme-contrast-cta, #fff);
+  cursor: pointer;
+}
+
+.h5p-answer-list .h5p-answer-list-add:before {
+  font-family: 'H5PFontAwesome4';
+  content: "\f067";
+}
+
+.h5p-answer-list .h5p-answer-list-add:hover:not(:disabled) {
+  background: var(--h5p-theme-main-cta-dark, #155db0);
+}
+
+.h5p-answer-list .h5p-answer-list-add:disabled {
+  background: #9aa4b1;
+  border-color: #9aa4b1;
+  cursor: not-allowed;
+}
+
+.h5p-answer-list .h5p-answer-list-error {
+  color: var(--h5p-theme-feedback-incorrect-main, #b3261e);
+  font-size: 0.875em;
+  min-height: 1.5em;
+  margin: 0.25em 0;
+}
+
+.h5p-answer-list .h5p-answer-list-count {
+  color: #52606d;
+  font-size: 0.875em;
+  margin-bottom: 0.5em;
+}
+
+.h5p-answer-list .h5p-answer-list-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.h5p-answer-list .h5p-answer-list-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+  max-width: 100%;
+  padding: 0.45em 0.6em 0.45em 0.75em;
+  border: 1px solid var(--h5p-theme-stroke-1, #d5dae1);
+  border-radius: var(--h5p-theme-border-radius-small, 0.25em);
+  background: var(--h5p-theme-alternative-base, #f5f7fa);
+  color: var(--h5p-theme-text-primary, #1f2933);
+}
+
+.h5p-answer-list .h5p-answer-list-item-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.h5p-answer-list .h5p-answer-list-icon:before {
+  font-family: 'H5PFontAwesome4';
+  content: "\f111";
+  font-size: 0.5em;
+  color: #9aa4b1;
+  vertical-align: middle;
+}
+
+.h5p-answer-list .h5p-answer-list-item.h5p-correct {
+  background: var(--h5p-theme-feedback-correct-secondary, #e3f4e6);
+  border-color: var(--h5p-theme-feedback-correct-third, #7cc48b);
+  color: var(--h5p-theme-feedback-correct-main, #1e6b31);
+}
+
+.h5p-answer-list .h5p-answer-list-item.h5p-correct .h5p-answer-list-icon:before {
+  content: "\f00c";
+  font-size: 1em;
+  color: var(--h5p-theme-feedback-correct-main, #1e6b31);
+}
+
+.h5p-answer-list .h5p-answer-list-item.h5p-wrong {
+  background: var(--h5p-theme-feedback-incorrect-secondary, #fbe7e6);
+  border-color: var(--h5p-theme-feedback-incorrect-third, #e48b85);
+  color: var(--h5p-theme-feedback-incorrect-main, #9b1c14);
+}
+
+.h5p-answer-list .h5p-answer-list-item.h5p-wrong .h5p-answer-list-icon:before {
+  content: "\f00d";
+  font-size: 1em;
+  color: var(--h5p-theme-feedback-incorrect-main, #9b1c14);
+}
+
+.h5p-answer-list .h5p-answer-list-item.h5p-solution {
+  background: transparent;
+  border-style: dashed;
+  border-color: #9aa4b1;
+  color: #3e4c59;
+}
+
+.h5p-answer-list .h5p-answer-list-item.h5p-solution .h5p-answer-list-icon:before {
+  content: "\f0eb";
+  font-size: 1em;
+  color: #52606d;
+}
+
+.h5p-answer-list .h5p-answer-list-remove {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 1em;
+  padding: 0.1em 0.4em;
+  border-radius: 0.2em;
+  cursor: pointer;
+}
+
+.h5p-answer-list .h5p-answer-list-remove:before {
+  font-family: 'H5PFontAwesome4';
+  content: "\f00d";
+}
+
+.h5p-answer-list .h5p-answer-list-remove:hover,
+.h5p-answer-list .h5p-answer-list-remove:focus {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.h5p-answer-list .h5p-answer-list-summary {
+  color: #52606d;
+  font-size: 0.875em;
+  margin-top: 0.5em;
+}
+
+.h5p-answer-list .h5p-answer-list-solution-heading {
+  font-weight: bold;
+  color: #3e4c59;
+  margin: 1em 0 0.5em;
+}
+
+.h5p-answer-list .h5p-answer-list-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.h5p-answer-list .h5p-answer-list-no-select,
+.h5p-answer-list .h5p-answer-list-no-select * {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Consistent space below media: H5P.Question gives video and audio none,
+   and image spacing varies between H5P.Question releases */
+.h5p-answer-list .h5p-question-image,
+.h5p-answer-list .h5p-question-video,
+.h5p-answer-list .h5p-question-audio {
+  margin-bottom: var(--h5p-theme-spacing-m, 1.5rem);
+}
+
+/* Older H5P.Video releases (before 1.6.77) fail to position the YouTube
+   iframe inside its 16:9 box, leaving an empty gap above the video */
+.h5p-answer-list .h5p-question-video .h5p-youtube iframe,
+.h5p-answer-list .h5p-question-video iframe[id^="h5p-youtube-"] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Classic H5P.Question shifts the image 1em right and down and adds 1em of
+   bottom margin to compensate. The expanded (full width) state removes that
+   margin but keeps the shift, so the image overflows the text below */
+.h5p-answer-list .h5p-question-image-fill-width .h5p-question-image-wrap {
+  transform: none;
+}
