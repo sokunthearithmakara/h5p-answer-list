@@ -10,22 +10,44 @@
  *
  * Files listed in a library's .h5pignore are left out of the package.
  *
+ * --slim leaves out libraries that every H5P site already has (FontAwesome,
+ * H5P.Question, H5P.JoubelUI, ...). H5P accepts a package without a library
+ * when that library is installed on the site. Use --exclude=Name,Name and
+ * --include=Name,Name to adjust which libraries are left out.
+ *
  * Usage (from an h5p-cli workspace, i.e. the folder with libraries/ and content/):
  *   node libraries/H5P.AnswerList-1.0/tools/export-legacy.js <content-folder> [coreMinor=27]
- * Output: temp/<content-folder>-core1.<coreMinor>.h5p
+ *        [--slim] [--exclude=Name,...] [--include=Name,...]
+ * Output: temp/<content-folder>-core1.<coreMinor>[-slim].h5p
  */
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
+// Libraries that ship with, or are installed on, practically every H5P site.
+// H5P.Components is not listed: it only arrived in 2025 and older sites lack it.
+const COMMON_LIBRARIES = [
+  'FontAwesome', 'jQuery.ui', 'H5P.Transition', 'H5P.FontIcons', 'H5P.JoubelUI',
+  'H5P.Question', 'H5P.TextUtilities', 'H5P.Image', 'H5P.Video', 'H5P.Audio',
+  'H5PEditor.RangeList', 'H5PEditor.ShowWhen', 'H5PEditor.TableList'
+];
+
 const root = findWorkspace();
 const librariesDir = path.join(root, 'libraries');
 const AdmZip = loadAdmZip();
 
-const folder = process.argv[2];
-const target = { majorVersion: 1, minorVersion: parseInt(process.argv[3] || '27', 10) };
+const args = process.argv.slice(2);
+const listFlag = (name) => args.filter((a) => a.startsWith(`--${name}=`))
+  .flatMap((a) => a.slice(name.length + 3).split(',')).map((s) => s.trim()).filter(Boolean);
+const positional = args.filter((a) => !a.startsWith('--'));
+const slim = args.includes('--slim');
+const excluded = new Set((slim ? COMMON_LIBRARIES : []).concat(listFlag('exclude')));
+listFlag('include').forEach((name) => excluded.delete(name));
+
+const folder = positional[0];
+const target = { majorVersion: 1, minorVersion: parseInt(positional[1] || '27', 10) };
 if (!folder) {
-  console.error('Usage: node libraries/H5P.AnswerList-1.0/tools/export-legacy.js <content-folder> [coreMinor=27]');
+  console.error('Usage: node libraries/H5P.AnswerList-1.0/tools/export-legacy.js <content-folder> [coreMinor=27] [--slim] [--exclude=Name,...] [--include=Name,...]');
   process.exit(1);
 }
 
@@ -57,6 +79,7 @@ h5pJson.preloadedDependencies = [...viewDeps].map((key) => {
   const lib = resolved[key].library;
   return { machineName: lib.machineName, majorVersion: lib.majorVersion, minorVersion: lib.minorVersion };
 });
+const suffix = excluded.size ? '-slim' : '';
 zip.addFile('h5p.json', Buffer.from(JSON.stringify(h5pJson)));
 
 // Content files (skip dev-server sessions)
@@ -69,16 +92,20 @@ walk(contentDir).forEach((rel) => {
 
 const outDir = path.join(root, 'temp');
 fs.mkdirSync(outDir, { recursive: true });
-const out = path.join(outDir, `${folder}-core${target.majorVersion}.${target.minorVersion}.h5p`);
+const out = path.join(outDir, `${folder}-core${target.majorVersion}.${target.minorVersion}${suffix}.h5p`);
 zip.writeZip(out);
 
 console.log(`Target core API: ${target.majorVersion}.${target.minorVersion}\n`);
 Object.keys(resolved).sort().forEach((key) => {
   const r = resolved[key];
+  if (r.skipped) {
+    console.log(`  ${key.padEnd(34)} ${'-'.padEnd(10)} not packed (must be installed on the site)`);
+    return;
+  }
   const core = r.library.coreApi ? `${r.library.coreApi.majorVersion}.${r.library.coreApi.minorVersion}` : '-';
   console.log(`  ${key.padEnd(34)} ${r.version.padEnd(10)} core ${core.padEnd(5)} ${r.source}`);
 });
-console.log(`\nWrote ${path.relative(root, out)}`);
+console.log(`\nWrote ${path.relative(root, out)} (${Math.round(fs.statSync(out).size / 1024)} KB)`);
 
 /**
  * Pack a library (once) and recurse into its dependencies.
@@ -89,6 +116,11 @@ function resolve(dep, runtimeSet, isRuntime) {
     runtimeSet.add(key);
   }
   if (resolved[key]) {
+    return;
+  }
+  if (excluded.has(dep.machineName)) {
+    // Left to the site; its own dependencies are the site's concern too
+    resolved[key] = { skipped: true, library: dep };
     return;
   }
   const dir = path.join(librariesDir, key);

@@ -56,27 +56,43 @@ An H5P question type where learners build a list of free-text answers, one item 
 - **H5P core 1.28+:** uses the new H5P theme and follows the platform's theme colours.
 - **Older cores:** tested on core 1.27 (as used by Lumi). There are no theme variables there, so Answer List falls back to the classic H5P.Question look. It also works around two display bugs in the older H5P.Question and H5P.Video releases: expanded images overlapping the text, and a gap above YouTube videos.
 
-### Exporting for older platforms
+## Exporting .h5p packages
+Use the export tool rather than the h5p-cli dashboard's Export button. Run it from an [h5p-cli](https://github.com/h5p/h5p-cli) workspace (the folder with `libraries/` and `content/`):
+
+```bash
+node libraries/H5P.AnswerList-1.0/tools/export-legacy.js <content-folder> [coreMinor=27] [--slim] [--exclude=Name,...] [--include=Name,...]
+```
+
+It writes `temp/<content-folder>-core1.<coreMinor>[-slim].h5p`.
+
+### Older platforms
 The latest H5P.Question, JoubelUI and Components releases require core 1.28. An older platform rejects a package that contains them, with an error like:
 
 ```
 api-version-unsupported (component: H5P.Components-1.0, current: 1.27, required: 1.28)
 ```
 
-Use the export tool to build a compatible package. Run it from an [h5p-cli](https://github.com/h5p/h5p-cli) workspace (the folder with `libraries/` and `content/`):
+For each dependency, the tool picks the newest release that the target core (`coreMinor`, default 27) accepts and that needs no build step, taken from that library's git history. Use `28` for current platforms.
 
-```bash
-node libraries/H5P.AnswerList-1.0/tools/export-legacy.js <content-folder> [coreMinor=27]
-```
+### Smaller packages
+H5P accepts a package that leaves out a library, as long as that library is already installed on the site. `--slim` leaves out libraries that every H5P site has: FontAwesome, jQuery.ui, H5P.Question, JoubelUI, Transition, FontIcons, TextUtilities, Image, Video, Audio, and the RangeList, ShowWhen and TableList editor widgets. The package then holds just Answer List and the content.
 
-For each dependency, the tool picks the newest release that the target core accepts and that needs no build step, taken from that library's git history. It writes `temp/<content-folder>-core1.<coreMinor>.h5p`. Files listed in `.h5pignore` (such as `tools/`) are left out of the package.
+| Nouns sample | Size |
+|---|---|
+| h5p-cli dashboard Export | 5,821 KB |
+| Export tool | 835 KB |
+| Export tool with `--slim` | 15 KB |
 
-When you update an installed copy, bump `patchVersion` in `library.json`. H5P only replaces a library when the package contains a higher patch version.
+If a site is missing one of the left-out libraries, the import fails with *Missing required library*. Put that library back with `--include=Name`, or leave out more with `--exclude=Name`. H5P.Components is never left out automatically, because sites set up before 2025 don't have it.
+
+### Other notes
+- Files listed in a library's `.h5pignore` (such as `tools/`) are left out of the package.
+- When you update an installed copy, bump `patchVersion` in `library.json`. H5P only replaces a library when the package contains a higher patch version.
 
 ## Development
 Plain JavaScript and CSS, with no build step.
 
-1. Install [h5p-cli](https://github.com/h5p/h5p-cli) and set up a workspace with the core libraries and this library's dependencies: H5P.Question 1.5, H5P.JoubelUI 1.3, H5P.TextUtilities 1.3, FontAwesome 4.5, plus the editor widgets H5PEditor.RangeList and H5PEditor.ShowWhen.
+1. Install [h5p-cli](https://github.com/h5p/h5p-cli) and set up a workspace with the core libraries and this library's dependencies: H5P.Question 1.5 (which brings H5P.JoubelUI and H5P.Components), H5P.TextUtilities 1.3, FontAwesome 4.5, plus the editor widgets H5PEditor.RangeList and H5PEditor.ShowWhen.
 2. Clone this repository into the workspace as `libraries/H5P.AnswerList-1.0`.
 3. Run `h5p server`, then create content from the dashboard.
 
@@ -87,7 +103,7 @@ Plain JavaScript and CSS, with no build step.
 | `css/answer-list.css` | Styles, using H5P theme variables with fallbacks |
 | `semantics.json` | Editor form definition |
 | `language/.en.json` | English source strings for translations |
-| `tools/export-legacy.js` | Export for older H5P cores (not packed into .h5p files) |
+| `tools/export-legacy.js` | Export tool: older cores, slim packages (not packed into .h5p files) |
 
 ## License
 [MIT](LICENSE)
