@@ -26,7 +26,7 @@ H5P.AnswerList.Matcher = (function () {
 
     // Pre-normalise every alternative once
     this.groups = groups.map(function (alternatives) {
-      return alternatives.map(this.normalize, this);
+      return alternatives.map(this.comparable, this);
     }, this);
   }
 
@@ -68,6 +68,8 @@ H5P.AnswerList.Matcher = (function () {
    */
   Matcher.prototype.normalize = function (text) {
     let value = (text || '')
+      // Invisible characters, e.g. the zero-width spaces common in Khmer text
+      .replace(/[​-‍⁠﻿]/g, '')
       .replace(/\s+/g, ' ')
       .trim()
       .replace(/^[.,;:!?"'()\[\]។៕]+|[.,;:!?"'()\[\]។៕]+$/g, '')
@@ -88,6 +90,19 @@ H5P.AnswerList.Matcher = (function () {
   };
 
   /**
+   * The form used for comparing. With spelling errors accepted, spacing is
+   * ignored too: in languages such as Khmer, where spaces are optional,
+   * "សេចក្ដី ជូន ដំណឹង" and "សេចក្ដីជូនដំណឹង" are the same answer.
+   *
+   * @param {string} text
+   * @return {string}
+   */
+  Matcher.prototype.comparable = function (text) {
+    const value = this.normalize(text);
+    return this.options.acceptSpellingErrors ? value.replace(/\s+/g, '') : value;
+  };
+
+  /**
    * Check whether two raw entries are the same answer after normalisation.
    *
    * @param {string} a
@@ -95,7 +110,7 @@ H5P.AnswerList.Matcher = (function () {
    * @return {boolean}
    */
   Matcher.prototype.isSame = function (a, b) {
-    return this.normalize(a) === this.normalize(b);
+    return this.comparable(a) === this.comparable(b);
   };
 
   /**
@@ -109,7 +124,7 @@ H5P.AnswerList.Matcher = (function () {
   Matcher.prototype.evaluate = function (entries) {
     const self = this;
     const used = {};
-    const normalized = entries.map(self.normalize, self);
+    const normalized = entries.map(self.comparable, self);
     const results = entries.map(function () {
       return { correct: false, groupIndex: -1 };
     });

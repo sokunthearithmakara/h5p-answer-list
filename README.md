@@ -32,7 +32,9 @@ An H5P question type where learners build a list of free-text answers, one item 
 - **Correct items needed for full score**, which is also the maximum score. Use it for "name at least two" tasks: 4 items allowed, 2 needed.
 - **Penalty** per incorrect item, e.g. 0.5 points. The score never goes below 0:
   `score = max(0, min(correct, required) − penalty × incorrect)`
-- **Matching options:** case sensitivity, accepting minor spelling errors (via H5P.TextUtilities), and ignoring leading articles (the word list is editable). Surrounding punctuation is ignored, including the Khmer ។ and ៕.
+- **Matching options:** case sensitivity, accepting minor spelling and spacing errors, and ignoring leading articles (the word list is editable).
+  - Spelling tolerance uses H5P.TextUtilities. It also ignores spacing, so in languages where spaces are optional, such as Khmer, "សេចក្ដី ជូន ដំណឹង" matches "សេចក្ដីជូនដំណឹង".
+  - Surrounding punctuation (including the Khmer ។ and ៕) and invisible characters such as zero-width spaces are always ignored.
 - **Behaviour options:** instant feedback, Show solution, Retry, Retry incorrect, highlighting answers in the supporting text, requiring a full list before checking, and two copy-and-paste deterrents:
   - *Prevent copying the task text*: learners can't select, copy or right-click the task description and supporting text.
   - *Prevent pasting into the answer field*: blocks keyboard paste, the right-click menu, drag and drop, and mobile clipboard insertion.

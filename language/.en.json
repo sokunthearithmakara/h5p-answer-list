@@ -71,8 +71,8 @@
           "label": "Case sensitive"
         },
         {
-          "label": "Accept minor spelling errors",
-          "description": "Answers with small typos (e.g. one wrong letter) are accepted."
+          "label": "Accept minor spelling and spacing errors",
+          "description": "Answers with small typos (e.g. one wrong letter) or different spacing are accepted. Useful for languages such as Khmer, where spaces between words are optional."
         },
         {
           "label": "Ignore leading articles",
