@@ -49,7 +49,8 @@ H5P.AnswerList = (function ($, Question, Matcher) {
         enableRetryIncorrect: true,
         requireFullList: false,
         preventTextSelection: false,
-        preventPaste: false
+        preventPaste: false,
+        highlightAnswersInText: false
       },
       l10n: {
         checkAnswer: 'Check',
@@ -569,6 +570,7 @@ H5P.AnswerList = (function ($, Question, Matcher) {
     this.setError('');
     this.renderList();
     this.showEvaluation();
+    this.highlightText(false);
     this.updateButtons();
     this.trigger('resize');
 
@@ -673,6 +675,7 @@ H5P.AnswerList = (function ($, Question, Matcher) {
     this.removeFeedback();
     this.summaryElement.textContent = '';
     this.solutionElement.innerHTML = '';
+    this.clearHighlights();
     this.setError('');
     if (this.params.behaviour.instantFeedback) {
       this.evaluate();
@@ -780,8 +783,189 @@ H5P.AnswerList = (function ($, Question, Matcher) {
       self.solutionElement.appendChild(list);
     }
 
+    self.highlightText(true);
     self.updateButtons();
     self.trigger('resize');
+  };
+
+  /**
+   * Highlight answers in the supporting text: the learner's correct answers
+   * (every alternative of each matched answer), incorrect answers that occur
+   * in the text and, with the solution shown, the answers the learner missed.
+   *
+   * @param {boolean} includeSolution
+   */
+  AnswerList.prototype.highlightText = function (includeSolution) {
+    if (!this.params.behaviour.highlightAnswersInText || !this.textElement) {
+      return;
+    }
+    this.clearHighlights();
+
+    const matched = {};
+    const wrong = [];
+    this.items.forEach(function (item) {
+      if (item.correct) {
+        matched[item.groupIndex] = true;
+      }
+      else {
+        wrong.push({ text: stripEdgePunctuation(item.text), type: 'wrong' });
+      }
+    });
+
+    let terms = [];
+    this.groups.forEach(function (group, index) {
+      const type = matched[index] ? 'correct' : (includeSolution ? 'solution' : null);
+      if (type) {
+        terms = terms.concat(group.map(function (alternative) {
+          return { text: alternative, type: type };
+        }));
+      }
+    });
+
+    // Answers take precedence over a wrong entry with the same text
+    highlightTerms(this.textElement, terms.concat(wrong), !!this.params.matching.caseSensitive, {
+      correct: this.params.a11y.correct,
+      wrong: this.params.a11y.incorrect,
+      solution: this.params.a11y.solution
+    });
+  };
+
+  /**
+   * Remove all answer highlights from the supporting text.
+   */
+  AnswerList.prototype.clearHighlights = function () {
+    if (!this.textElement) {
+      return;
+    }
+    this.textElement.querySelectorAll('mark.h5p-answer-list-hl').forEach(function (mark) {
+      mark.replaceWith(document.createTextNode(mark.textContent));
+    });
+    this.textElement.normalize();
+  };
+
+  // Letters of scripts that separate words with spaces: matches in these
+  // scripts must be whole words
+  const SPACED_WORD_CHAR = /[\p{Script=Latin}\p{Script=Cyrillic}\p{Script=Greek}\p{N}]/u;
+  // Signs that join the next consonant to the previous one (e.g. Khmer coeng ្)
+  const JOINER = /[्্੍્୍்్್്්္្᩠]/;
+  const COMBINING_MARK = /\p{M}/u;
+
+  /**
+   * A function telling whether text.slice(start, end) can be highlighted:
+   * it must not split a character cluster (so "ត្រី" isn't found inside
+   * "ស្ត្រី"), and in space-separated scripts it must be whole words.
+   * Scripts written without spaces (e.g. Khmer) have no word boundaries to
+   * check, so a term can still match inside a longer compound word.
+   *
+   * @param {string} text
+   * @return {function(number, number): boolean}
+   */
+  const wholeWordTest = function (text) {
+    return function (start, end) {
+      const before = text.slice(0, start).slice(-1);
+      const after = text.slice(end, end + 1);
+      const first = text.charAt(start);
+      const last = text.slice(end - 1, end);
+      if (JOINER.test(before) || COMBINING_MARK.test(first) || JOINER.test(last) || COMBINING_MARK.test(after)) {
+        return false;
+      }
+      return !(SPACED_WORD_CHAR.test(first) && before && SPACED_WORD_CHAR.test(before)) &&
+        !(SPACED_WORD_CHAR.test(last) && after && SPACED_WORD_CHAR.test(after));
+    };
+  };
+
+  /**
+   * @param {string} text
+   * @return {string}
+   */
+  const stripEdgePunctuation = function (text) {
+    return text.trim().replace(/^[.,;:!?"'()\[\]។៕]+|[.,;:!?"'()\[\]។៕]+$/g, '').trim();
+  };
+
+  /**
+   * @param {string} text
+   * @return {string}
+   */
+  const escapeRegExp = function (text) {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  };
+
+  /**
+   * Wrap occurrences of the terms in the element's text in <mark> elements.
+   *
+   * @param {HTMLElement} root
+   * @param {{text: string, type: string}[]} terms The first term with a given text wins
+   * @param {boolean} caseSensitive
+   * @param {object} labels Tooltip per highlight type, so meaning isn't colour only
+   */
+  const highlightTerms = function (root, terms, caseSensitive, labels) {
+    const keyOf = function (text) {
+      return caseSensitive ? text : text.toLocaleLowerCase();
+    };
+    const types = {};
+    terms.forEach(function (term) {
+      const text = term.text.trim();
+      if (text && !Object.prototype.hasOwnProperty.call(types, keyOf(text))) {
+        types[keyOf(text)] = term.type;
+      }
+    });
+    const list = Object.keys(types).sort(function (a, b) {
+      return b.length - a.length; // Prefer the longest match, e.g. "rivers" over "river"
+    });
+    if (!list.length) {
+      return;
+    }
+    const pattern = new RegExp(list.map(escapeRegExp).join('|'), caseSensitive ? 'gu' : 'giu');
+
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (walker.nextNode()) {
+      nodes.push(walker.currentNode);
+    }
+
+    nodes.forEach(function (node) {
+      const text = node.nodeValue;
+      const isWholeWords = wholeWordTest(text);
+      const ranges = [];
+      let match;
+      pattern.lastIndex = 0;
+      while ((match = pattern.exec(text)) !== null) {
+        const start = match.index;
+        let end = start + match[0].length;
+        if (!isWholeWords(start, end)) {
+          // The longest term cut a word; try the shorter terms at the same spot
+          const shorter = list.find(function (term) {
+            return term.length < match[0].length &&
+              keyOf(text.substr(start, term.length)) === term &&
+              isWholeWords(start, start + term.length);
+          });
+          if (!shorter) {
+            pattern.lastIndex = start + 1;
+            continue;
+          }
+          end = start + shorter.length;
+          pattern.lastIndex = end;
+        }
+        ranges.push({ start: start, end: end, type: types[keyOf(text.slice(start, end))] });
+      }
+      if (!ranges.length) {
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+      let position = 0;
+      ranges.forEach(function (range) {
+        fragment.appendChild(document.createTextNode(text.slice(position, range.start)));
+        const mark = document.createElement('mark');
+        mark.className = 'h5p-answer-list-hl h5p-answer-list-hl-' + range.type;
+        mark.title = labels[range.type] || '';
+        mark.textContent = text.slice(range.start, range.end);
+        fragment.appendChild(mark);
+        position = range.end;
+      });
+      fragment.appendChild(document.createTextNode(text.slice(position)));
+      node.parentNode.replaceChild(fragment, node);
+    });
   };
 
   AnswerList.prototype.resetTask = function () {

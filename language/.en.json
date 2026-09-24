@@ -100,6 +100,10 @@
           "description": "Removes the incorrect items and keeps the correct ones."
         },
         {
+          "label": "Highlight answers in the supporting text",
+          "description": "After Check, correct answers are highlighted in the supporting text and incorrect answers that appear in it are marked. Show solution also highlights the answers the learner missed."
+        },
+        {
           "label": "Require a full list before checking"
         },
         {

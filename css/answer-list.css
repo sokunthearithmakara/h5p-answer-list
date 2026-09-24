@@ -224,3 +224,25 @@
 .h5p-answer-list .h5p-question-image-fill-width .h5p-question-image-wrap {
   transform: none;
 }
+
+/* Answers highlighted in the supporting text after Check / Show solution */
+.h5p-answer-list mark.h5p-answer-list-hl {
+  color: inherit;
+  padding: 0 0.1em;
+  border-radius: 0.2em;
+}
+
+.h5p-answer-list mark.h5p-answer-list-hl-correct {
+  background: var(--h5p-theme-feedback-correct-third, #cdeccf);
+  box-shadow: inset 0 -2px 0 var(--h5p-theme-feedback-correct-main, #1e6b31);
+}
+
+.h5p-answer-list mark.h5p-answer-list-hl-wrong {
+  background: var(--h5p-theme-feedback-incorrect-third, #f7d4d1);
+  box-shadow: inset 0 -2px 0 var(--h5p-theme-feedback-incorrect-main, #9b1c14);
+}
+
+.h5p-answer-list mark.h5p-answer-list-hl-solution {
+  background: #fff1b8;
+  box-shadow: inset 0 -2px 0 #b7791f;
+}

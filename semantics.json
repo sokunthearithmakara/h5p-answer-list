@@ -252,6 +252,14 @@
         "default": true
       },
       {
+        "name": "highlightAnswersInText",
+        "type": "boolean",
+        "label": "Highlight answers in the supporting text",
+        "description": "After Check, correct answers are highlighted in the supporting text and incorrect answers that appear in it are marked. Show solution also highlights the answers the learner missed.",
+        "importance": "low",
+        "default": false
+      },
+      {
         "name": "requireFullList",
         "type": "boolean",
         "label": "Require a full list before checking",
