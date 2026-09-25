@@ -281,6 +281,14 @@
         "description": "Blocks pasting with keyboard shortcuts, the right-click menu, and drag and drop.",
         "importance": "low",
         "default": false
+      },
+      {
+        "name": "enableSoundEffects",
+        "type": "boolean",
+        "label": "Play sound effects",
+        "description": "Play a short sound when an item is added or removed, and when the answer is checked.",
+        "importance": "low",
+        "default": false
       }
     ]
   },

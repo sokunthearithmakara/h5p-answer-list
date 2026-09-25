@@ -113,6 +113,10 @@
         {
           "label": "Prevent pasting into the answer field",
           "description": "Blocks pasting with keyboard shortcuts, the right-click menu, and drag and drop."
+        },
+        {
+          "label": "Play sound effects",
+          "description": "Play a short sound when an item is added or removed, and when the answer is checked."
         }
       ]
     },

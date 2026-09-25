@@ -11,6 +11,50 @@ H5P.AnswerList = (function ($, Question, Matcher) {
 
   let idCounter = 0;
 
+  // Texts that H5P.Question inserts as HTML (the button labels).
+  const HTML_TEXTS = ['checkAnswer', 'showSolution', 'tryAgain', 'retryIncorrect'];
+
+  /**
+   * Turn HTML entities from the editor back into plain text.
+   *
+   * @param {string} text
+   * @return {string}
+   */
+  const decodeEntities = function (text) {
+    if (typeof text !== 'string' || text.indexOf('&') === -1) {
+      return text;
+    }
+    return new DOMParser().parseFromString(text, 'text/html').documentElement.textContent;
+  };
+
+  // Sound effects, made of short tones so no audio files are needed.
+  // Each tone: wave shape, start and end frequency (Hz), start time and length (s), volume.
+  const SOUNDS = {
+    add: [
+      { wave: 'sine', from: 520, to: 880, start: 0, length: 0.08, volume: 0.25 }
+    ],
+    remove: [
+      { wave: 'sine', from: 700, to: 420, start: 0, length: 0.08, volume: 0.18 }
+    ],
+    itemCorrect: [
+      { wave: 'triangle', from: 659, start: 0, length: 0.1, volume: 0.25 },
+      { wave: 'triangle', from: 988, start: 0.08, length: 0.18, volume: 0.25 }
+    ],
+    itemWrong: [
+      { wave: 'triangle', from: 294, to: 247, start: 0, length: 0.22, volume: 0.3 }
+    ],
+    correct: [
+      { wave: 'triangle', from: 523, start: 0, length: 0.14, volume: 0.25 },
+      { wave: 'triangle', from: 659, start: 0.09, length: 0.14, volume: 0.25 },
+      { wave: 'triangle', from: 784, start: 0.18, length: 0.14, volume: 0.25 },
+      { wave: 'triangle', from: 1047, start: 0.27, length: 0.3, volume: 0.25 }
+    ],
+    wrong: [
+      { wave: 'triangle', from: 330, start: 0, length: 0.18, volume: 0.3 },
+      { wave: 'triangle', from: 247, to: 220, start: 0.16, length: 0.32, volume: 0.3 }
+    ]
+  };
+
   /**
    * @class
    * @param {object} params Content parameters
@@ -50,6 +94,7 @@ H5P.AnswerList = (function ($, Question, Matcher) {
         requireFullList: false,
         preventTextSelection: false,
         preventPaste: false,
+        enableSoundEffects: false,
         highlightAnswersInText: false
       },
       l10n: {
@@ -87,6 +132,19 @@ H5P.AnswerList = (function ($, Question, Matcher) {
         retryIncorrect: 'Retry the incorrect answers. Incorrect answers are removed; correct answers are kept.'
       }
     }, params);
+
+    // The editor stores texts with HTML entities (don&#039;t), but most are
+    // shown as plain text. Button labels are inserted as HTML, so keep those.
+    const l10n = this.params.l10n;
+    const a11y = this.params.a11y;
+    Object.keys(l10n).forEach(function (key) {
+      if (HTML_TEXTS.indexOf(key) === -1) {
+        l10n[key] = decodeEntities(l10n[key]);
+      }
+    });
+    Object.keys(a11y).forEach(function (key) {
+      a11y[key] = decodeEntities(a11y[key]);
+    });
 
     // Answer groups, each holding its alternatives. One answer per line;
     // older content stored a list of answers.
@@ -360,6 +418,54 @@ H5P.AnswerList = (function ($, Question, Matcher) {
   };
 
   /**
+   * Play a sound effect when they are turned on.
+   *
+   * @param {string} name Key in SOUNDS
+   */
+  AnswerList.prototype.playSound = function (name) {
+    const Context = window.AudioContext || window.webkitAudioContext;
+    if (!this.params.behaviour.enableSoundEffects || !Context) {
+      return;
+    }
+
+    try {
+      if (!this.audioContext) {
+        this.audioContext = new Context();
+      }
+      const context = this.audioContext;
+      if (context.state === 'suspended') {
+        context.resume();
+      }
+
+      const now = context.currentTime;
+      SOUNDS[name].forEach(function (tone) {
+        const start = now + tone.start;
+        const end = start + tone.length;
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+
+        oscillator.type = tone.wave;
+        oscillator.frequency.setValueAtTime(tone.from, start);
+        if (tone.to) {
+          oscillator.frequency.exponentialRampToValueAtTime(tone.to, end);
+        }
+        // Fade in and out quickly to avoid clicks
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(tone.volume, start + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, end);
+
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+        oscillator.start(start);
+        oscillator.stop(end + 0.02);
+      });
+    }
+    catch (error) {
+      // Sound effects are optional. The task works without them.
+    }
+  };
+
+  /**
    * Show or clear the inline error message.
    *
    * @param {string} message
@@ -424,6 +530,10 @@ H5P.AnswerList = (function ($, Question, Matcher) {
     });
     if (self.params.behaviour.instantFeedback) {
       announcement += ' ' + (added.correct ? self.params.a11y.correct : self.params.a11y.incorrect) + '.';
+      self.playSound(added.correct ? 'itemCorrect' : 'itemWrong');
+    }
+    else {
+      self.playSound('add');
     }
     self.read(announcement);
 
@@ -441,6 +551,7 @@ H5P.AnswerList = (function ($, Question, Matcher) {
       return;
     }
     this.setError('');
+    this.playSound('remove');
 
     if (this.params.behaviour.instantFeedback) {
       this.evaluate();
@@ -575,6 +686,7 @@ H5P.AnswerList = (function ($, Question, Matcher) {
     this.trigger('resize');
 
     if (triggerAnswered) {
+      this.playSound(this.getScore() === this.getMaxScore() ? 'correct' : 'wrong');
       const correct = this.getCorrectCount();
       this.read(fill(this.params.l10n.resultSummary, {
         correct: correct,
