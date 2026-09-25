@@ -1145,11 +1145,34 @@ H5P.AnswerList = (function ($, Question, Matcher) {
   // xAPI
   // ---------------------------------------------------------------------------
 
+  /**
+   * Send the statement for a checked answer.
+   *
+   * Standalone, it is sent as "completed": the task is finished, and H5P core
+   * then saves the learner's state right away. Inside a container (Question
+   * Set, Interactive Video, ...) it is sent as "answered", which is what
+   * containers expect from their questions.
+   *
+   * Only one of the two is sent: platforms such as Moodle's H5P activity
+   * record an attempt for every top-level "answered" or "completed"
+   * statement, so sending both would count each check twice. The statement
+   * carries the full question definition and response either way.
+   */
   AnswerList.prototype.triggerAnswered = function () {
-    const xAPIEvent = this.createXAPIEventTemplate('answered');
+    const xAPIEvent = this.createXAPIEventTemplate(this.isStandalone() ? 'completed' : 'answered');
     this.addQuestionToXAPI(xAPIEvent);
     this.addResponseToXAPI(xAPIEvent);
     this.trigger(xAPIEvent);
+  };
+
+  /**
+   * Whether this runs on its own rather than inside another content type.
+   * Uses the same test H5P core uses to add a parent to xAPI statements.
+   *
+   * @return {boolean}
+   */
+  AnswerList.prototype.isStandalone = function () {
+    return !(this.parent && (this.parent.contentId || this.parent.subContentId));
   };
 
   AnswerList.prototype.getXAPIData = function () {

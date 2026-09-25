@@ -46,7 +46,11 @@ An H5P question type where learners build a list of free-text answers, one item 
 
 ### Reporting (xAPI)
 - `interacted` when an item is added or removed.
-- `answered` on Check, with:
+- One finishing statement on Check:
+  - **`completed`** when Answer List runs on its own. H5P core then stores the score and saves the learner's state right away.
+  - **`answered`** when it runs inside a container (Question Set, Interactive Video, …), which is what containers expect from a question.
+
+  Only one of the two is sent, because platforms such as Moodle's H5P activity record an attempt for every top-level `answered` or `completed` statement. Either way, the statement carries:
   - `interactionType: fill-in` and the learner's items joined by `[,]` as the response.
   - A `{case_matters=…}{order_matters=false}` correct-response pattern.
   - The full alternatives list in the `https://h5p.org/x-api/alternatives` extension.
