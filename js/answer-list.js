@@ -935,7 +935,8 @@ H5P.AnswerList = (function ($, Question, Matcher) {
     });
 
     // Answers take precedence over a wrong entry with the same text
-    highlightTerms(this.textElement, terms.concat(wrong), !!this.params.matching.caseSensitive, {
+    const matching = this.params.matching;
+    highlightTerms(this.textElement, terms.concat(wrong), !!matching.caseSensitive, !!matching.acceptSpellingErrors, {
       correct: this.params.a11y.correct,
       wrong: this.params.a11y.incorrect,
       solution: this.params.a11y.solution
@@ -1002,32 +1003,62 @@ H5P.AnswerList = (function ($, Question, Matcher) {
     return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   };
 
+  // Invisible characters, e.g. the zero-width spaces common in Khmer text
+  const INVISIBLE = '[\\u200B-\\u200D\\u2060\\uFEFF]';
+
   /**
    * Wrap occurrences of the terms in the element's text in <mark> elements.
+   *
+   * Invisible characters in the text are skipped. With ignoreSpacing (spelling
+   * errors accepted), spaces are optional too, so "ព្រះឧបជ្ឈាយាចារ្យ" also
+   * finds "ព្រះឧបជ្ឈាយា ចារ្យ", the same way the answers are matched.
    *
    * @param {HTMLElement} root
    * @param {{text: string, type: string}[]} terms The first term with a given text wins
    * @param {boolean} caseSensitive
+   * @param {boolean} ignoreSpacing
    * @param {object} labels Tooltip per highlight type, so meaning isn't colour only
    */
-  const highlightTerms = function (root, terms, caseSensitive, labels) {
+  const highlightTerms = function (root, terms, caseSensitive, ignoreSpacing, labels) {
+    const invisible = new RegExp(INVISIBLE, 'g');
     const keyOf = function (text) {
-      return caseSensitive ? text : text.toLocaleLowerCase();
+      const key = text.replace(invisible, '').replace(/\s+/g, ignoreSpacing ? '' : ' ').trim();
+      return caseSensitive ? key : key.toLocaleLowerCase();
     };
-    const types = {};
+    // Allowed between any two characters of a term
+    const gap = ignoreSpacing ? '(?:\\s|' + INVISIBLE + ')*' : INVISIBLE + '*';
+    const toSource = function (key) {
+      return Array.from(key).map(function (character) {
+        return character === ' ' ? '(?:\\s|' + INVISIBLE + ')+' : escapeRegExp(character);
+      }).join(gap);
+    };
+
+    const seen = {};
+    const entries = [];
     terms.forEach(function (term) {
-      const text = term.text.trim();
-      if (text && !Object.prototype.hasOwnProperty.call(types, keyOf(text))) {
-        types[keyOf(text)] = term.type;
+      const key = keyOf(term.text);
+      if (key && !seen[key]) {
+        seen[key] = true;
+        entries.push({ key: key, type: term.type, source: toSource(key) });
       }
     });
-    const list = Object.keys(types).sort(function (a, b) {
-      return b.length - a.length; // Prefer the longest match, e.g. "rivers" over "river"
-    });
-    if (!list.length) {
+    if (!entries.length) {
       return;
     }
-    const pattern = new RegExp(list.map(escapeRegExp).join('|'), caseSensitive ? 'gu' : 'giu');
+    // Prefer the longest match, e.g. "rivers" over "river"
+    entries.sort(function (a, b) {
+      return b.key.length - a.key.length;
+    });
+
+    const flags = caseSensitive ? 'gu' : 'giu';
+    // One capture group per term tells which term matched
+    const pattern = new RegExp(entries.map(function (entry) {
+      return '(' + entry.source + ')';
+    }).join('|'), flags);
+    // Per-term patterns anchored at a position, for trying shorter terms
+    const anchored = entries.map(function (entry) {
+      return new RegExp(entry.source, flags.replace('g', 'y'));
+    });
 
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const nodes = [];
@@ -1044,21 +1075,28 @@ H5P.AnswerList = (function ($, Question, Matcher) {
       while ((match = pattern.exec(text)) !== null) {
         const start = match.index;
         let end = start + match[0].length;
+        let index = match.findIndex(function (group, i) {
+          return i > 0 && group !== undefined;
+        }) - 1;
         if (!isWholeWords(start, end)) {
           // The longest term cut a word; try the shorter terms at the same spot
-          const shorter = list.find(function (term) {
-            return term.length < match[0].length &&
-              keyOf(text.substr(start, term.length)) === term &&
-              isWholeWords(start, start + term.length);
-          });
-          if (!shorter) {
+          index = -1;
+          for (let i = 0; i < anchored.length; i++) {
+            anchored[i].lastIndex = start;
+            const shorter = anchored[i].exec(text);
+            if (shorter && shorter[0].length < match[0].length && isWholeWords(start, start + shorter[0].length)) {
+              index = i;
+              end = start + shorter[0].length;
+              break;
+            }
+          }
+          if (index === -1) {
             pattern.lastIndex = start + 1;
             continue;
           }
-          end = start + shorter.length;
           pattern.lastIndex = end;
         }
-        ranges.push({ start: start, end: end, type: types[keyOf(text.slice(start, end))] });
+        ranges.push({ start: start, end: end, type: entries[index].type });
       }
       if (!ranges.length) {
         return;
