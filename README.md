@@ -17,6 +17,7 @@ An H5P question type where learners build a list of free-text answers, one item 
 - Optional **highlighting in the supporting text**: after Check, correct answers are highlighted green and incorrect answers that appear in the text red. Show solution adds the missed answers in yellow. Each highlight has a tooltip, so the meaning isn't colour only.
 - **Retry** clears the whole list. **Retry incorrect** removes only the wrong items and keeps the correct ones.
 - Optional **instant feedback** marks each item as soon as it's added.
+- Optional **sound effects**: short tones when an item is added or removed, for each item with instant feedback, and on Check (one for a perfect score, another otherwise). The tones are generated in the browser, so no audio files are needed, and the task works normally if sound isn't available.
 - Progress is saved and restored when the learner comes back (resume state).
 
 ### For authors
@@ -35,13 +36,13 @@ An H5P question type where learners build a list of free-text answers, one item 
 - **Matching options:** case sensitivity, accepting minor spelling and spacing errors, and ignoring leading articles (the word list is editable).
   - Spelling tolerance uses H5P.TextUtilities. It also ignores spacing, so in languages where spaces are optional, such as Khmer, "សេចក្ដី ជូន ដំណឹង" matches "សេចក្ដីជូនដំណឹង".
   - Surrounding punctuation (including the Khmer ។ and ៕) and invisible characters such as zero-width spaces are always ignored.
-- **Behaviour options:** instant feedback, Show solution, Retry, Retry incorrect, highlighting answers in the supporting text, requiring a full list before checking, and two copy-and-paste deterrents:
+- **Behaviour options:** instant feedback, Show solution, Retry, Retry incorrect, highlighting answers in the supporting text, sound effects, requiring a full list before checking, and two copy-and-paste deterrents:
   - *Prevent copying the task text*: learners can't select, copy or right-click the task description and supporting text.
   - *Prevent pasting into the answer field*: blocks keyboard paste, the right-click menu, drag and drop, and mobile clipboard insertion.
 
   These are deterrents only; a determined learner can still get around them.
 - **Highlighting** finds every alternative of each answer in the supporting text. In languages written with spaces it matches whole words only ("bag" doesn't match inside "baggage"). It never splits a character cluster, so in Khmer "ត្រី" doesn't match inside "ស្ត្រី". Khmer compound words can still contain a matching term.
-- Overall feedback per score range, and every learner-facing string (buttons, messages, screen-reader labels) is translatable.
+- Overall feedback per score range, and every learner-facing string (buttons, messages, screen-reader labels) is translatable. Special characters in translations, such as apostrophes, display correctly.
 
 ### Reporting (xAPI)
 - `interacted` when an item is added or removed.
